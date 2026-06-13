@@ -36,6 +36,38 @@ body {
   padding: 0 16px 80px;
 }
 
+/* ── SELECTOR DE RUTINA ── */
+.rutina-switch {
+  display: flex;
+  gap: 8px;
+  padding: 18px 0 0;
+  flex-wrap: wrap;
+}
+.rutina-pill {
+  flex: 1 1 0;
+  min-width: 120px;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  cursor: pointer;
+  color: var(--tinta);
+  background: var(--papel2);
+  border: 2px solid var(--tinta);
+  border-radius: 2px;
+  transition: transform 0.08s, background 0.15s, color 0.15s;
+}
+.rutina-pill:active {
+  transform: translateY(1px);
+}
+.rutina-pill.activo {
+  background: var(--rojo);
+  color: var(--papel);
+  box-shadow: 3px 3px 0 var(--tinta);
+}
+
 /* ── HEADER ── */
 header {
   padding: 28px 0 10px;
@@ -151,24 +183,19 @@ h1 .rojo {
 
 /* ── TABS DÍAS ── */
 nav.dias {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
-  overflow-x: auto;
   padding: 16px 0 14px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-nav.dias::-webkit-scrollbar {
-  display: none;
 }
 .dia-btn {
-  flex: 0 0 auto;
   background: transparent;
   border: 2px solid var(--tinta);
   color: var(--tinta);
   cursor: pointer;
-  padding: 8px 12px 6px;
-  min-width: 86px;
+  padding: 8px 10px 6px;
+  min-width: 0;
+  overflow: hidden;
   text-align: left;
   transition: transform 0.12s ease;
 }
@@ -181,6 +208,7 @@ nav.dias::-webkit-scrollbar {
   line-height: 1;
   display: block;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .dia-btn .n {
   font-size: 10px;
@@ -190,6 +218,9 @@ nav.dias::-webkit-scrollbar {
   color: #6f6b5d;
   display: block;
   margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .dia-btn .hechos {
   font-size: 10px;
@@ -239,14 +270,9 @@ summary:focus-visible {
 }
 .info-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 12px;
-}
-@media (max-width: 500px) {
-  .info-cards {
-    grid-template-columns: 1fr;
-  }
 }
 .info-card {
   background: #f6f1e4;
@@ -263,6 +289,80 @@ summary:focus-visible {
   text-transform: uppercase;
   color: var(--rojo);
   margin-bottom: 4px;
+}
+
+/* ── CALENTAMIENTO ── */
+.calentamiento {
+  margin-top: 16px;
+  border: 2px solid var(--tinta);
+  border-left: 6px solid var(--rojo);
+  background: #f6f1e4;
+  padding: 14px 16px 16px;
+}
+.cal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.cal-titulo {
+  font-family: 'Anton', sans-serif;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.cal-dur {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rojo);
+}
+.cal-pasos {
+  list-style: none;
+  counter-reset: cal;
+  display: grid;
+  gap: 8px;
+}
+.cal-pasos li {
+  position: relative;
+  padding-left: 30px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3c3a32;
+}
+.cal-pasos li::before {
+  counter-increment: cal;
+  content: counter(cal);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Anton', sans-serif;
+  font-size: 12px;
+  color: var(--papel);
+  background: var(--tinta);
+  border-radius: 50%;
+}
+.cal-pasos li b {
+  color: var(--tinta);
+}
+.cal-hoy {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1.5px dashed var(--linea);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #3c3a32;
+}
+.cal-hoy b {
+  color: var(--rojo);
 }
 
 /* ── GRUPO MUSCULAR ── */
@@ -353,7 +453,8 @@ summary:focus-visible {
     width: 88px;
   }
 }
-.fig-img img {
+.fig-img img,
+.fig-img video {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -653,11 +754,16 @@ footer b {
   justify-content: center;
   overflow: hidden;
 }
-.modal-img img {
+.modal-img img,
+.modal-img video {
   max-height: 220px;
   max-width: 100%;
   object-fit: contain;
   padding: 10px;
+}
+.modal-img .fallback {
+  font-size: 64px;
+  color: var(--acero);
 }
 .modal-body {
   padding: 18px;

@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const KEY = "rutina_fierros_v3";
-
 export type SaveStatus = "idle" | "loading" | "saving" | "saved" | "error";
 
 interface Progress {
@@ -21,40 +19,54 @@ export function exId(di: number, gi: number, ei: number) {
  * Estado de progreso (checks + pesos) persistido en localStorage.
  * Replica el window.storage del HTML original: debounce de 600ms al guardar
  * y un indicador de estado ("Guardando…" / "Guardado").
+ *
+ * Cada rutina pasa su propia `storageKey`, así los progresos no se pisan.
+ * Al cambiar de rutina, recarga el progreso de esa clave.
  */
-export function useProgress() {
+export function useProgress(storageKey: string) {
   const [progress, setProgress] = useState<Progress>(EMPTY);
   const [status, setStatus] = useState<SaveStatus>("loading");
   const [ready, setReady] = useState(false);
   const saveT = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Carga inicial (solo cliente).
+  // Carga (solo cliente) y recarga al cambiar de rutina.
   useEffect(() => {
+    setReady(false);
+    setStatus("loading");
+    let cargado: Progress = EMPTY;
     try {
-      const raw = localStorage.getItem(KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const d = JSON.parse(raw) as Partial<Progress>;
-        setProgress({ checks: d.checks || {}, pesos: d.pesos || {} });
+        cargado = { checks: d.checks || {}, pesos: d.pesos || {} };
       }
     } catch {
       /* ignora json corrupto */
     }
+    setProgress(cargado);
     setStatus("idle");
     setReady(true);
-  }, []);
+    // Cancela cualquier guardado pendiente al cambiar de clave / desmontar.
+    return () => {
+      if (saveT.current) clearTimeout(saveT.current);
+    };
+  }, [storageKey]);
 
-  const persist = useCallback((next: Progress) => {
-    setStatus("saving");
-    if (saveT.current) clearTimeout(saveT.current);
-    saveT.current = setTimeout(() => {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(next));
-        setStatus("saved");
-      } catch {
-        setStatus("error");
-      }
-    }, 600);
-  }, []);
+  const persist = useCallback(
+    (next: Progress) => {
+      setStatus("saving");
+      if (saveT.current) clearTimeout(saveT.current);
+      saveT.current = setTimeout(() => {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(next));
+          setStatus("saved");
+        } catch {
+          setStatus("error");
+        }
+      }, 600);
+    },
+    [storageKey],
+  );
 
   const toggleCheck = useCallback(
     (id: string) => {

@@ -1,3 +1,5 @@
+import { workoutData, type WorkoutData } from "./loVoyALograr";
+
 export type TipoEjercicio = "C" | "A" | "I";
 
 export interface Ejercicio {
@@ -26,12 +28,56 @@ export interface Dia {
   grupos: Grupo[];
 }
 
+/** Una rutina completa = un "set" seleccionable en la cabecera. */
+export interface Rutina {
+  key: string;
+  /** Nombre corto para el selector (pill). */
+  nombre: string;
+  /** Clave de localStorage propia: cada rutina guarda su progreso aparte. */
+  storageKey: string;
+  eyebrow: string;
+  /** Hero: primera línea normal + segunda línea en rojo. */
+  heroTop: string;
+  heroRojo: string;
+  subBold: string;
+  subRest: string;
+  objetivo: string;
+  /** Día activo inicial según el día de la semana (0 = domingo … 6 = sábado). */
+  diaInicial: (weekday: number) => number;
+  dias: Dia[];
+}
+
 export const TIPO: Record<TipoEjercicio, [string, string]> = {
   C: ["Compuesto", "tipo-C"],
   A: ["Aislado", "tipo-A"],
   I: ["Isométrico", "tipo-I"],
 };
 
+export interface PasoCalentamiento {
+  fase: string;
+  detalle: string;
+}
+
+/** Protocolo general de calentamiento, común a todas las sesiones (~8–10 min). */
+export const CALENTAMIENTO: PasoCalentamiento[] = [
+  {
+    fase: "Cardio suave · 5 min",
+    detalle:
+      "Trote en el lugar, soga o bici. Subí temperatura y pulsaciones hasta sentir el cuerpo despierto y romper a sudar leve.",
+  },
+  {
+    fase: "Movilidad articular · 2–3 min",
+    detalle:
+      "10 círculos por articulación: cuello, hombros, brazos, cadera, rodillas, tobillos y muñecas. Rango cómodo, sin forzar.",
+  },
+  {
+    fase: "Activación específica · 2 series",
+    detalle:
+      "Repetí el primer ejercicio del día con peso bien liviano, lejos del fallo. Ensaya el patrón antes de cargar de verdad.",
+  },
+];
+
+/** Días de la rutina original "Fierros" (Lun–Vie, mancuernas + banco). */
 export const DIAS: Dia[] = [
   {
     key: "lun",
@@ -225,5 +271,81 @@ export const DIAS: Dia[] = [
         ],
       },
     ],
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rutina 2 · "Lo voy a lograr"
+// Adaptada desde la data de /camila (plan hipertrofia ~10 kg, Mié–Dom).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TIPO_MAP: Record<string, TipoEjercicio> = {
+  Compuesto: "C",
+  Aislado: "A",
+  Isométrico: "I",
+};
+
+// La data de Camila va en orden Mié→Dom (keys 1..5). Acá las etiquetas cortas.
+const DIA_LABEL = ["Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+const capitalizar = (s: string) =>
+  s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
+/** Convierte la estructura Workout de /camila al formato Dia de rutipro. */
+function adaptarRutina(wd: WorkoutData): Dia[] {
+  return [1, 2, 3, 4, 5].map((k, idx) => {
+    const w = wd[k];
+    return {
+      key: `lvl-${k}`,
+      dia: DIA_LABEL[idx],
+      tag: w.subtitle,
+      titulo: capitalizar(w.title),
+      dur: "~65 min",
+      warmup: w.warmup,
+      stretch: w.stretching,
+      grupos: w.groups.map((g) => ({
+        nom: g.name,
+        ej: g.exercises.map((e) => ({
+          n: e.name,
+          s: e.sets,
+          r: e.rest,
+          t: TIPO_MAP[e.type] ?? "A",
+          tip: e.notes ?? "",
+          // Prioriza el video local; si no hay, el gif externo.
+          img: e.videoUrl ?? e.imageUrl ?? "",
+        })),
+      })),
+    };
+  });
+}
+
+export const RUTINAS: Rutina[] = [
+  {
+    key: "fierros",
+    nombre: "Fierros",
+    storageKey: "rutina_fierros_v3",
+    eyebrow: "Mancuernas + banco plano e inclinado",
+    heroTop: "Rutina de",
+    heroRojo: "Fierros",
+    subBold: "5 días · 2× por músculo · ejercicios distintos cada sesión.",
+    subRest: " Mantén la rutina 6–8 semanas y sube cargas.",
+    objetivo: "Objetivo: mamado en diciembre",
+    // Lun–Vie → 0–4; finde cae al lunes.
+    diaInicial: (d) => (d >= 1 && d <= 5 ? d - 1 : 0),
+    dias: DIAS,
+  },
+  {
+    key: "lo-voy-a-lograr",
+    nombre: "Lo voy a lograr",
+    storageKey: "rutina_lo_voy_a_lograr_v1",
+    eyebrow: "Hipertrofia · mancuernas fijas ~10 kg + banco",
+    heroTop: "Lo voy a",
+    heroRojo: "lograr",
+    subBold: "5 días · ~10 kg · progresión por tensión, no por peso.",
+    subRest: " Tempo controlado, rango completo y series al límite.",
+    objetivo: "Objetivo: hipertrofia sin subir carga",
+    // Mié(3)→0, Jue(4)→1, Vie(5)→2, Sáb(6)→3, Dom(0)→4; Lun/Mar caen al miércoles.
+    diaInicial: (d) => ({ 3: 0, 4: 1, 5: 2, 6: 3, 0: 4 } as Record<number, number>)[d] ?? 0,
+    dias: adaptarRutina(workoutData),
   },
 ];

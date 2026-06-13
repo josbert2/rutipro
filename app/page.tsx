@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { DIAS, type Ejercicio } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { RUTINAS, CALENTAMIENTO, type Ejercicio } from "@/lib/data";
 import { exId, useProgress, type SaveStatus } from "@/lib/useProgress";
 import { BarraDiscos } from "@/components/BarraDiscos";
 import { ExerciseCard } from "@/components/ExerciseCard";
@@ -16,48 +16,39 @@ const STATUS_TXT: Record<SaveStatus, string> = {
 };
 
 export default function Home() {
+  const [activeRoutine, setActiveRoutine] = useState(0);
   const [activeDay, setActiveDay] = useState(0);
   const [modalEj, setModalEj] = useState<Ejercicio | null>(null);
   const [lastAdded, setLastAdded] = useState<number | null>(null);
 
-  const { progress, status, ready, toggleCheck, setPeso, resetDia } =
-    useProgress();
+  const rutina = RUTINAS[activeRoutine];
+  const dias = rutina.dias;
 
-  // Día activo inicial = día de la semana (lun–vie), igual que el original.
+  const { progress, status, ready, toggleCheck, setPeso, resetDia } =
+    useProgress(rutina.storageKey);
+
+  // Día activo inicial = "hoy" según cada rutina. Se recalcula al cambiar de set.
   useEffect(() => {
-    const d = new Date().getDay();
-    setActiveDay(d >= 1 && d <= 5 ? d - 1 : 0);
-  }, []);
+    setActiveDay(rutina.diaInicial(new Date().getDay()));
+    setLastAdded(null);
+  }, [rutina]);
 
   const totalDia = (di: number) =>
-    DIAS[di].grupos.reduce((a, g) => a + g.ej.length, 0);
+    dias[di].grupos.reduce((a, g) => a + g.ej.length, 0);
   const doneDia = (di: number) =>
-    DIAS[di].grupos.reduce(
+    dias[di].grupos.reduce(
       (a, g, gi) =>
         a + g.ej.filter((_, ei) => progress.checks[exId(di, gi, ei)]).length,
       0,
     );
 
-  const dia = DIAS[activeDay];
+  const dia = dias[activeDay];
   const total = totalDia(activeDay);
   const hechos = doneDia(activeDay);
   const completo = hechos === total && hechos > 0;
 
-  // Índice global del disco recién marcado, para animar la barra.
-  const orderIndex = useMemo(() => {
-    // mapa id -> índice de orden dentro del día
-    const map: Record<string, number> = {};
-    let i = 0;
-    dia.grupos.forEach((g, gi) =>
-      g.ej.forEach((_, ei) => {
-        map[exId(activeDay, gi, ei)] = i++;
-      }),
-    );
-    return map;
-  }, [dia, activeDay]);
-
   const handleToggle = (id: string, wasOn: boolean) => {
-    // si se está marcando (no desmarcando) y completa la barra, animamos
+    // si se está marcando (no desmarcando), animamos el disco recién cargado
     setLastAdded(!wasOn ? hechos : null);
     toggleCheck(id);
   };
@@ -75,18 +66,31 @@ export default function Home() {
 
   return (
     <div className="wrap">
+      <nav className="rutina-switch" aria-label="Elegir rutina">
+        {RUTINAS.map((r, i) => (
+          <button
+            key={r.key}
+            className={`rutina-pill${i === activeRoutine ? " activo" : ""}`}
+            aria-pressed={i === activeRoutine}
+            onClick={() => setActiveRoutine(i)}
+          >
+            {r.nombre}
+          </button>
+        ))}
+      </nav>
+
       <header>
-        <span className="eyebrow">Mancuernas + banco plano e inclinado</span>
+        <span className="eyebrow">{rutina.eyebrow}</span>
         <h1>
-          Rutina de
+          {rutina.heroTop}
           <br />
-          <span className="rojo">Fierros</span>
+          <span className="rojo">{rutina.heroRojo}</span>
         </h1>
         <p className="sub">
-          <b>5 días · 2× por músculo · ejercicios distintos cada sesión.</b>{" "}
-          Mantén la rutina 6–8 semanas y sube cargas.
+          <b>{rutina.subBold}</b>
+          {rutina.subRest}
         </p>
-        <span className="objetivo">Objetivo: mamado en diciembre</span>
+        <span className="objetivo">{rutina.objetivo}</span>
         <div className={`guardado${status === "saved" ? " on" : ""}`}>
           <span className="dot" />
           <span>{ready ? STATUS_TXT[status] : STATUS_TXT.loading}</span>
@@ -110,7 +114,7 @@ export default function Home() {
       </div>
 
       <nav className="dias" aria-label="Días de entrenamiento">
-        {DIAS.map((d, i) => {
+        {dias.map((d, i) => {
           const h = doneDia(i);
           const t = totalDia(i);
           return (
@@ -138,15 +142,28 @@ export default function Home() {
           </p>
           <div className="info-cards">
             <div className="info-card">
-              <div className="info-card-label">⚡ Calentamiento</div>
-              {dia.warmup}
-            </div>
-            <div className="info-card">
               <div className="info-card-label">🧘 Estiramiento final</div>
               {dia.stretch}
             </div>
           </div>
         </div>
+
+        <section className="calentamiento" aria-label="Calentamiento">
+          <div className="cal-head">
+            <span className="cal-titulo">⚡ Calentamiento</span>
+            <span className="cal-dur">~8–10 min antes de empezar</span>
+          </div>
+          <ol className="cal-pasos">
+            {CALENTAMIENTO.map((p) => (
+              <li key={p.fase}>
+                <b>{p.fase}.</b> {p.detalle}
+              </li>
+            ))}
+          </ol>
+          <p className="cal-hoy">
+            <b>Hoy ({dia.tag}):</b> {dia.warmup}
+          </p>
+        </section>
 
         {dia.grupos.map((g, gi) => (
           <div key={g.nom}>

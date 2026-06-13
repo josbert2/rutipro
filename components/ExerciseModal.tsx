@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { type Ejercicio, TIPO } from "@/lib/data";
+import { ExerciseMedia } from "@/components/ExerciseMedia";
 
 export function ExerciseModal({
   ej,
@@ -42,10 +43,7 @@ export function ExerciseModal({
           ✕
         </button>
         <div className="modal-img">
-          {ej && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={ej.img} alt={ej.n} />
-          )}
+          {ej && <ExerciseMedia src={ej.img} alt={ej.n} />}
         </div>
         <div className="modal-body">
           <div className="modal-title">{ej?.n}</div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { type Ejercicio, TIPO } from "@/lib/data";
+import { ExerciseMedia } from "@/components/ExerciseMedia";
 
 export function ExerciseCard({
   ej,
@@ -20,7 +20,6 @@ export function ExerciseCard({
   onPeso: (value: string) => void;
   onOpenModal: () => void;
 }) {
-  const [imgError, setImgError] = useState(false);
   const [tl, tc] = TIPO[ej.t] ?? ["", ""];
 
   return (
@@ -39,17 +38,7 @@ export function ExerciseCard({
             }
           }}
         >
-          {imgError ? (
-            <div className="fallback">🏋️</div>
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={ej.img}
-              alt={ej.n}
-              loading="lazy"
-              onError={() => setImgError(true)}
-            />
-          )}
+          <ExerciseMedia src={ej.img} alt={ej.n} />
           <div className="lupa" aria-hidden="true">
             🔍
           </div>
